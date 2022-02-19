@@ -39,14 +39,27 @@ const webgl_demo = function() {
     }
 
     let viewMatrix = new Matrix4();
+    // let viewMatrix = new Float32Array([ 
+    //     0.78, -0.384, 0.4923, -0.20,
+    //     0.0, 0.78, 0.6154, -0.25,
+    //     -0.62, -0.48, 0.6154, -0.25,
+    //     0.0, 0.0, 0.0, 1.0
+    // ]);
+    // console.log(viewMatrix);
+    // let viewMatrix = new Float32Array([
+    //     0.7808688282966614, -0.3844732344150543, 0.4923659563064575, 0, 
+    //     0, 0.7881700992584229, 0.6154574751853943, 0, 
+    //     -0.6246950626373291, -0.4805915355682373, 0.6154574751853943, 0, 
+    //     0, 5.9604645663569045e-9, -0.40620192885398865, 1])
     viewMatrix.setLookAt(0.20, 0.25, 0.25, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
-
+    console.log(viewMatrix.elements);
     let u_ViewMatrix = gl.getUniformLocation(program, 'u_ViewMatrix');
     if (!u_ViewMatrix) {
         console.log("获取uniform变量u_ViewMatrix存储位置失败");
         return;
     }
     gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatrix.elements);
+    // gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatrix);
 
     // 指定canvas的背景颜色
     gl.clearColor(0.0, 0.0, 0.0, 1.0);

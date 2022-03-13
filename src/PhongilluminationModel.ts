@@ -62,7 +62,7 @@ void main() {
   // 3.仅镜面反射光
     gl_FragColor = vec4((diffuse + ambient)*vec3(0,0,0) + specular, v_Color.a);
   // 4.叠加效果
-    // gl_FragColor = vec4(diffuse + ambient + specular, v_Color.a);
+    gl_FragColor = vec4(diffuse + ambient + specular, v_Color.a);
 }`;
 
 let g_eyeX = 5.0;

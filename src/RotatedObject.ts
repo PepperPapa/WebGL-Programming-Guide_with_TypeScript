@@ -1,32 +1,32 @@
 // 顶点着色器
 const VSHADER_SOURCE = 
 `attribute vec4 a_Position;
-// attribute vec4 a_Normal;
-// attribute vec4 a_Color;
+attribute vec4 a_Normal;
+attribute vec4 a_Color;
 attribute vec2 a_TexCoord;
 varying vec2 v_TexCoord;
 uniform mat4 u_MvpMatrix;
-// uniform mat4 u_NormalMatrix;
-// uniform vec3 u_LightColor;
-// uniform vec3 u_LightDirection;
-// uniform vec3 u_AmbientLight;
-// varying vec4 v_Color;
+uniform mat4 u_NormalMatrix;
+uniform vec3 u_LightColor;
+uniform vec3 u_LightDirection;
+uniform vec3 u_AmbientLight;
+varying vec4 v_Color;
 void main() {
   gl_Position = u_MvpMatrix * a_Position;
   v_TexCoord = a_TexCoord;
-//   vec3 normal = normalize(vec3(u_NormalMatrix * a_Normal));
-//   float nDotL = max(dot(u_LightDirection, normal), 0.0);
-//   vec3 ambient = u_AmbientLight * a_Color.rgb;
-//   v_Color = vec4(u_LightColor * a_Color.rgb * nDotL + ambient, a_Color.a);
+  vec3 normal = normalize(vec3(u_NormalMatrix * a_Normal));
+  float nDotL = max(dot(u_LightDirection, normal), 0.0);
+  vec3 ambient = u_AmbientLight * a_Color.rgb;
+  v_Color = vec4(u_LightColor * a_Color.rgb * nDotL + ambient, a_Color.a);
 }`;
 // 片元着色器
 const FSHADER_SOURCE =
 `precision mediump float;
-uniform sampler2D u_Sampler1;
-// varying vec4 v_Color;
+uniform sampler2D u_Sampler;
+varying vec4 v_Color;
 varying vec2 v_TexCoord;
 void main() {
-    gl_FragColor = texture2D(u_Sampler1, v_TexCoord);
+    gl_FragColor = v_Color * texture2D(u_Sampler, v_TexCoord);
 }`;
 
 const webgl_demo = function() {
@@ -54,50 +54,49 @@ const webgl_demo = function() {
     // 指定canvas的背景颜色
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.enable(gl.DEPTH_TEST);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    let viewProjMatrix = new Matrix4();
-    viewProjMatrix.setPerspective(50.0, canvas.width / canvas.height, 1.0, 100.0);
-    viewProjMatrix.lookAt(20.0, 10.0, 30.0, 0, 0, 0, 0, 1, 0);
-    
+    // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     let u_MvpMatrix = gl.getUniformLocation(program, 'u_MvpMatrix');
     if (!u_MvpMatrix) {
         console.log("获取uniform变量u_MvpMatrix存储位置失败");
         return;
     }
-    
-    // let u_LightColor = gl.getUniformLocation(program, 'u_LightColor');
-    // let u_LightDirection = gl.getUniformLocation(program, 'u_LightDirection');
-    // gl.uniform3f(u_LightColor, 1.0, 1.0, 1.0);
-    // let lightDirection = new Vector3([2, 2, 4]);
-    // lightDirection.normalize();
-    // gl.uniform3fv(u_LightDirection, lightDirection.elements);
-    
-    // let u_NormalMatrix = gl.getUniformLocation(program, 'u_NormalMatrix');
-    // if (!u_NormalMatrix) {
-    //     console.log("获取uniform变量u_NormalMatrix存储位置失败");
-    //     return;
-    // }
 
-    // let u_AmbientLight = gl.getUniformLocation(program, 'u_AmbientLight');
-    // if (!u_AmbientLight) {
-    //     console.log("获取u_AmbientLight存储位置失败");
-    //     return -1;
-    // }
-    // gl.uniform3f(u_AmbientLight, 0.2, 0.2, 0.2);
+    let viewProjMatrix = new Matrix4();
+    viewProjMatrix.setPerspective(30.0, canvas.width / canvas.height, 1.0, 100.0);
+    viewProjMatrix.lookAt(3.0, 3.0, 7.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+    
+    let u_LightColor = gl.getUniformLocation(program, 'u_LightColor');
+    let u_LightDirection = gl.getUniformLocation(program, 'u_LightDirection');
+    gl.uniform3f(u_LightColor, 1.0, 1.0, 1.0);
+    let lightDirection = new Vector3([2, 2, 4]);
+    lightDirection.normalize();
+    gl.uniform3fv(u_LightDirection, lightDirection.elements);
+    
+    let u_NormalMatrix = gl.getUniformLocation(program, 'u_NormalMatrix');
+    if (!u_NormalMatrix) {
+        console.log("获取uniform变量u_NormalMatrix存储位置失败");
+        return;
+    }
+
+    let u_AmbientLight = gl.getUniformLocation(program, 'u_AmbientLight');
+    if (!u_AmbientLight) {
+        console.log("获取u_AmbientLight存储位置失败");
+        return -1;
+    }
+    gl.uniform3f(u_AmbientLight, 0.2, 0.2, 0.2);
 
     // 配置纹理
     if (!initTextures(gl, program)) {
         console.log("配置纹理失败");
+        return;
     }
 
-    // document.onkeydown = function(ev) {
-    //     keydown(ev, gl, program, n, u_MvpMatrix, viewProjMatrix, u_NormalMatrix);
-    // }
-    
-    // draw(gl, program, n, u_MvpMatrix, viewProjMatrix, u_NormalMatrix);
-    draw(gl, program, n, u_MvpMatrix, viewProjMatrix);
+    var tick = function() {   // Start drawing
+        draw(gl, program, n, u_MvpMatrix, viewProjMatrix, u_NormalMatrix);
+        requestAnimationFrame(tick);
+    };
+    tick();
 };
 
 // 每次按键转动的角度
@@ -109,15 +108,13 @@ let g_NormalMatrix = new Matrix4();
     
 // }
 
-// function draw(gl, program, n, u_MvpMatrix, viewProjMatrix: Matrix4, u_NormalMatrix) {
-function draw(gl, program, n, u_MvpMatrix, viewProjMatrix: Matrix4) {
+function draw(gl, program, n, u_MvpMatrix, viewProjMatrix: Matrix4, u_NormalMatrix) {
     // 清空颜色缓冲区和深度缓冲区的背景色
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     
     // 绘制基座
-    g_ModelMatrix.setTranslate(0.0, -6.0, 0.0);
-    // drawBox(gl, n, 10.0, 10.0, 10.0, u_MvpMatrix, viewProjMatrix, u_NormalMatrix);
-    drawBox(gl, n, 10.0, 10.0, 10.0, u_MvpMatrix, viewProjMatrix);
+    g_ModelMatrix.setTranslate(0.0, 0.0, 0.0);
+    drawBox(gl, n, 1.0, 1.0, 1.0, u_MvpMatrix, viewProjMatrix, u_NormalMatrix);
 }
 
 function initVertexBuffers(gl: WebGLRenderingContext, program): number {
@@ -129,52 +126,33 @@ function initVertexBuffers(gl: WebGLRenderingContext, program): number {
     //  | |v7---|-|v4
     //  |/      |/
     //  v2------v3
-    // let vertices = new Float32Array([
-    //    0.5, 1.0, 0.5,   0.5, 0.0, 0.5,   -0.5, 0.0, 0.5,   -0.5, 1.0, 0.5, // 正面 v0-v3-v2-v1
-    //    0.5, 1.0, 0.5,   0.5, 0.0, 0.5,   0.5, 0.0, -0.5,   0.5, 1.0, -0.5, // 右侧面 v0-v3-v4-v5
-    //    0.5, 1.0, 0.5,   0.5, 1.0, -0.5,  -0.5, 1.0, -0.5,  -0.5, 1.0, 0.5, // 上面 v0-v5-v6-v1
-    //    -0.5, 1.0, 0.5,  -0.5, 1.0, -0.5, -0.5, 0.0, -0.5,  -0.5, 0.0, 0.5, // 左侧面 v1-v6-v7-v2
-    //    0.5, 0.0, 0.5,   -0.5, 0.0, 0.5,  -0.5, 0.0, -0.5,  0.5, 0.0, -0.5,  // 底面 v3-v2-v7-v4
-    //    0.5, 1.0, -0.5,  0.5, 0.0, -0.5,  -0.5, 0.0, -0.5,  -0.5, 1.0, -0.5, // 背面 v5-v4-v7-v6
-    // ]);
-    // // 纹理坐标
-    // let texCoords = new Float32Array([
-    //     1.0, 1.0,  1.0, 0.0,  0.0, 0.0,  0.0, 1.0, // 正面 v0-v3-v2-v1
-    //     1.0, 1.0,  1.0, 0.0,  1.0, 0.0,  1.0, 1.0, // 右侧面 v0-v3-v4-v5
-    //     1.0, 0.0,  1.0, 1.0,  0.0, 1.0,  0.0, 0.0, // 上面 v0-v5-v6-v1
-    //     1.0, 1.0,  0.0, 1.0,  0.0, 0.0,  1.0, 0.0, // 左侧面 v1-v6-v7-v2
-    //     1.0, 0.0,  0.0, 0.0,  0.0, 1.0,  1.0, 1.0, // 底面 v3-v2-v7-v4
-    //     1.0, 1.0,  1.0, 0.0,  0.0, 0.0,  1.0, 1.0, // 背面 v5-v4-v7-v6
-    // ]);
+    let vertices = new Float32Array([
+       0.5, 1.0, 0.5,   0.5, 0.0, 0.5,   -0.5, 0.0, 0.5,   -0.5, 1.0, 0.5, // 正面 v0-v3-v2-v1
+       0.5, 1.0, 0.5,   0.5, 0.0, 0.5,   0.5, 0.0, -0.5,   0.5, 1.0, -0.5, // 右侧面 v0-v3-v4-v5
+       0.5, 1.0, 0.5,   0.5, 1.0, -0.5,  -0.5, 1.0, -0.5,  -0.5, 1.0, 0.5, // 上面 v0-v5-v6-v1
+       -0.5, 1.0, 0.5,  -0.5, 1.0, -0.5, -0.5, 0.0, -0.5,  -0.5, 0.0, 0.5, // 左侧面 v1-v6-v7-v2
+       0.5, 0.0, 0.5,   -0.5, 0.0, 0.5,  -0.5, 0.0, -0.5,  0.5, 0.0, -0.5,  // 底面 v3-v2-v7-v4
+       0.5, 1.0, -0.5,  0.5, 0.0, -0.5,  -0.5, 0.0, -0.5,  -0.5, 1.0, -0.5, // 背面 v5-v4-v7-v6
+    ]);
+    // 纹理坐标
+    let texCoords = new Float32Array([
+        1.0, 1.0,  1.0, 0.0,  0.0, 0.0,  0.0, 1.0, // 正面 v0-v3-v2-v1
+        0.0, 1.0,  0.0, 0.0,  1.0, 0.0,  1.0, 1.0, // 右侧面 v0-v3-v4-v5
+        1.0, 0.0,  1.0, 1.0,  0.0, 1.0,  0.0, 0.0, // 上面 v0-v5-v6-v1
+        1.0, 1.0,  0.0, 1.0,  0.0, 0.0,  1.0, 0.0, // 左侧面 v1-v6-v7-v2
+        1.0, 0.0,  0.0, 0.0,  0.0, 1.0,  1.0, 1.0, // 底面 v3-v2-v7-v4
+        1.0, 1.0,  1.0, 0.0,  0.0, 0.0,  1.0, 1.0, // 背面 v5-v4-v7-v6
+    ]);
 
     // 立方体顶点坐标对应的颜色,所有面的颜色均相同
     let colors = new Float32Array([
-        1.0, 0.6, 0.2, 1.0, 0.6, 0.2, 1.0, 0.6, 0.2, 1.0, 0.6, 0.2,
-        1.0, 0.6, 0.2, 1.0, 0.6, 0.2, 1.0, 0.6, 0.2, 1.0, 0.6, 0.2,
-        1.0, 0.6, 0.2, 1.0, 0.6, 0.2, 1.0, 0.6, 0.2, 1.0, 0.6, 0.2,
-        1.0, 0.6, 0.2, 1.0, 0.6, 0.2, 1.0, 0.6, 0.2, 1.0, 0.6, 0.2,
-        1.0, 0.6, 0.2, 1.0, 0.6, 0.2, 1.0, 0.6, 0.2, 1.0, 0.6, 0.2,
-        1.0, 0.6, 0.2, 1.0, 0.6, 0.2, 1.0, 0.6, 0.2, 1.0, 0.6, 0.2,        
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,        
     ]);
-
-    var vertices = new Float32Array([   // Vertex coordinates
-     1.0, 1.0, 1.0,  -1.0, 1.0, 1.0,  -1.0,-1.0, 1.0,   1.0,-1.0, 1.0,    // v0-v1-v2-v3 front
-     1.0, 1.0, 1.0,   1.0,-1.0, 1.0,   1.0,-1.0,-1.0,   1.0, 1.0,-1.0,    // v0-v3-v4-v5 right
-     1.0, 1.0, 1.0,   1.0, 1.0,-1.0,  -1.0, 1.0,-1.0,  -1.0, 1.0, 1.0,    // v0-v5-v6-v1 up
-    -1.0, 1.0, 1.0,  -1.0, 1.0,-1.0,  -1.0,-1.0,-1.0,  -1.0,-1.0, 1.0,    // v1-v6-v7-v2 left
-    -1.0,-1.0,-1.0,   1.0,-1.0,-1.0,   1.0,-1.0, 1.0,  -1.0,-1.0, 1.0,    // v7-v4-v3-v2 down
-     1.0,-1.0,-1.0,  -1.0,-1.0,-1.0,  -1.0, 1.0,-1.0,   1.0, 1.0,-1.0     // v4-v7-v6-v5 back
-  ]);
-
-  var texCoords = new Float32Array([   // Texture coordinates
-      1.0, 1.0,   0.0, 1.0,   0.0, 0.0,   1.0, 0.0,    // v0-v1-v2-v3 front
-      0.0, 1.0,   0.0, 0.0,   1.0, 0.0,   1.0, 1.0,    // v0-v3-v4-v5 right
-      1.0, 0.0,   1.0, 1.0,   0.0, 1.0,   0.0, 0.0,    // v0-v5-v6-v1 up
-      1.0, 1.0,   0.0, 1.0,   0.0, 0.0,   1.0, 0.0,    // v1-v6-v7-v2 left
-      0.0, 0.0,   1.0, 0.0,   1.0, 1.0,   0.0, 1.0,    // v7-v4-v3-v2 down
-      0.0, 0.0,   1.0, 0.0,   1.0, 1.0,   0.0, 1.0     // v4-v7-v6-v5 back
-  ]);
-
     
     // 立方体6个面三角形顶点索引
     let indices = new Uint8Array([
@@ -196,28 +174,31 @@ function initVertexBuffers(gl: WebGLRenderingContext, program): number {
        0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, //后
     ]);
 
-    // 将顶点坐标写入缓冲区对象
-    if (!initArrayBuffer(gl, program, vertices, 3, gl.FLOAT, 'a_Position')) {
-        return -1;
-    }
-    // // 将顶点颜色写入缓冲区对象
-    // if (!initArrayBuffer(gl, program, colors, 3, gl.FLOAT, 'a_Color')) {
-    //     return -1;
-    // }
-    // // 将法向量写入缓冲区对象
-    // if (!initArrayBuffer(gl, program, normals, 3, gl.FLOAT, 'a_Normal')) {
-    //     return -1;
-    // }
-    // 将纹理坐标写入缓冲区对象
-    if (!initArrayBuffer(gl, program, texCoords, 2, gl.FLOAT, 'a_TexCoord')) {
-        return -1;
-    }
-
     let indexBuffer = gl.createBuffer();
     if (!indexBuffer) {
         console.log("创建缓冲区失败！");
         return -1;
     }
+
+    // 将顶点坐标写入缓冲区对象
+    if (!initArrayBuffer(gl, program, vertices, 3, gl.FLOAT, 'a_Position')) {
+        return -1;
+    }
+
+    // 将纹理坐标写入缓冲区对象
+    if (!initArrayBuffer(gl, program, texCoords, 2, gl.FLOAT, 'a_TexCoord')) {
+        return -1;
+    }
+    
+    // 将顶点颜色写入缓冲区对象
+    if (!initArrayBuffer(gl, program, colors, 3, gl.FLOAT, 'a_Color')) {
+        return -1;
+    }
+    // 将法向量写入缓冲区对象
+    if (!initArrayBuffer(gl, program, normals, 3, gl.FLOAT, 'a_Normal')) {
+        return -1;
+    }
+
     // Unbind the buffer object
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
@@ -232,7 +213,7 @@ function initArrayBuffer(gl, program, data, num, type, attribute) {
     let buffer = gl.createBuffer();
     if (!buffer) {
         console.log("创建缓冲器对象失败");
-        return -1;
+        return false;
     }
     // 将缓冲区对象绑定到目标ARRAY_BUFFER
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -242,10 +223,9 @@ function initArrayBuffer(gl, program, data, num, type, attribute) {
     let a_attribute = gl.getAttribLocation(program, attribute);
     if (a_attribute < 0) {
         console.log("获取变量存储位置失败");
-        return -1;
+        return false;
     }
 
-    let FSIZE = data.BYTES_PER_ELEMENT;
     // 将缓冲区对象分配给a_Positioin变量
     gl.vertexAttribPointer(a_attribute, num, type, false, 0, 0);
     // 连接a_attribute变量与分配给它的缓冲区对象
@@ -254,16 +234,15 @@ function initArrayBuffer(gl, program, data, num, type, attribute) {
 }
 
 
-// function drawBox(gl, n, width, height, depth, u_MvpMatrix, viewProjMatrix: Matrix4, u_NormalMatrix) {
-function drawBox(gl, n, width, height, depth, u_MvpMatrix, viewProjMatrix: Matrix4) {
+function drawBox(gl, n, width, height, depth, u_MvpMatrix, viewProjMatrix: Matrix4, u_NormalMatrix) {
     g_ModelMatrix.scale(width, height, depth);
     
-    // // 法向量变换矩阵
-    // g_NormalMatrix.setInverseOf(g_ModelMatrix);
-    // g_NormalMatrix.transpose();
+    // 法向量变换矩阵
+    g_NormalMatrix.setInverseOf(g_ModelMatrix);
+    g_NormalMatrix.transpose();
 
-    // // 观察矩阵x模型变换
-    // gl.uniformMatrix4fv(u_NormalMatrix, false, g_NormalMatrix.elements);
+    // 观察矩阵x模型变换
+    gl.uniformMatrix4fv(u_NormalMatrix, false, g_NormalMatrix.elements);
     g_MvpMatrix.set(viewProjMatrix);
     g_MvpMatrix.multiply(g_ModelMatrix);
     gl.uniformMatrix4fv(u_MvpMatrix, false, g_MvpMatrix.elements);
@@ -274,22 +253,26 @@ function drawBox(gl, n, width, height, depth, u_MvpMatrix, viewProjMatrix: Matri
 
 function initTextures(gl: WebGLRenderingContext, program): boolean {
     // 纹理贴图1
-    let texture1 = gl.createTexture();
-    if (!texture1) {
+    let texture = gl.createTexture();
+    if (!texture) {
         console.log("创建texture失败");
         return false;
     }
-    let u_Sampler1 = gl.getUniformLocation(program, "u_Sampler1");
-    if (u_Sampler1 < 0) {
+    let u_Sampler = gl.getUniformLocation(program, "u_Sampler");
+    if (!u_Sampler) {
         console.log("获取u_Sampler1变量存储位置失败");
         return false;
     }
-    let image1 = new Image();
-    image1.onload = function() {
-        loadTexture(gl, texture1, u_Sampler1, image1);
+    let image = new Image();
+    if (!image) {
+        console.log('Failed to create the image object');
+        return false;
+    }
+    image.onload = function() {
+        loadTexture(gl, texture, u_Sampler, image);
     };
     // 浏览器开始加载图像
-    image1.src = "../resources/sky.jpg";
+    image.src = "../resources/sky.jpg";
 
     return true;
 }

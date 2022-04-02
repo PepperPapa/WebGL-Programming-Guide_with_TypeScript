@@ -29,6 +29,8 @@ void main() {
     gl_FragColor = v_Color * texture2D(u_Sampler, v_TexCoord);
 }`;
 
+let g_currentAngle = [0.0, 0.0]; // [绕x轴旋转的角度, 绕y轴旋转的角度]
+
 const webgl_demo = function() {
     let canvas = <HTMLCanvasElement> document.getElementById("webgl");
 
@@ -87,10 +89,13 @@ const webgl_demo = function() {
     gl.uniform3f(u_AmbientLight, 0.2, 0.2, 0.2);
 
     // 配置纹理
-    if (!initTextures(gl, program)) {
+    if (!initTextures(gl, program, n, u_MvpMatrix, viewProjMatrix, u_NormalMatrix)) {
         console.log("配置纹理失败");
         return;
     }
+
+    // 注册事件响应函数
+    initEventHandlers(canvas);
 
     var tick = function() {   // Start drawing
         draw(gl, program, n, u_MvpMatrix, viewProjMatrix, u_NormalMatrix);
@@ -104,9 +109,46 @@ let g_ModelMatrix = new Matrix4();
 let g_MvpMatrix = new Matrix4();
 let g_NormalMatrix = new Matrix4();
 
-// function keydown(ev, gl, program, n, u_MvpMatrix, viewProjMatrix, u_NormalMatrix) {
-    
-// }
+function initEventHandlers(canvas: HTMLCanvasElement) {
+    let dragging = false;
+    let lastX = -1;
+    let lastY = -1;
+    canvas.onmousedown = function(ev: any) {
+        let x = ev.clientX;
+        let y = ev.clientY;
+        let rect = ev.target.getBoundingClientRect();
+        // 如果鼠标在canvas范围内
+        if (rect.left <= x && x <= rect.right && rect.top <= y && y <= rect.bottom) {
+            dragging = true;
+            lastX = x;
+            lastY = y;
+        }
+    }
+
+    canvas.onmousemove = function(ev) {
+        // console.log(ev);
+        let x = ev.clientX;
+        let y = ev.clientY;
+        if (dragging) {
+            let factor = 100/canvas.height;
+            var dx = factor * (x - lastX);
+            var dy = factor * (y - lastY);
+            g_currentAngle[0] = g_currentAngle[0] + dy;
+            g_currentAngle[1] = g_currentAngle[1] + dx;
+            console.log(g_currentAngle);
+         }
+        lastX = x;
+        lastY = y;
+    }
+
+    canvas.onmouseup = function(ev) {
+        dragging = false;
+    }
+
+    canvas.onmouseleave = function(ev) {
+        dragging = false;
+    }
+}
 
 function draw(gl, program, n, u_MvpMatrix, viewProjMatrix: Matrix4, u_NormalMatrix) {
     // 清空颜色缓冲区和深度缓冲区的背景色
@@ -114,7 +156,9 @@ function draw(gl, program, n, u_MvpMatrix, viewProjMatrix: Matrix4, u_NormalMatr
     
     // 绘制基座
     g_ModelMatrix.setTranslate(0.0, 0.0, 0.0);
-    drawBox(gl, n, 1.0, 1.0, 1.0, u_MvpMatrix, viewProjMatrix, u_NormalMatrix);
+    g_ModelMatrix.rotate(g_currentAngle[0], 1.0, 0.0, 0.0);
+    g_ModelMatrix.rotate(g_currentAngle[1], 0.0, 1.0, 0.0);
+    drawBox(gl, n, 2.0, 2.0, 2.0, u_MvpMatrix, viewProjMatrix, u_NormalMatrix);
 }
 
 function initVertexBuffers(gl: WebGLRenderingContext, program): number {
@@ -127,12 +171,12 @@ function initVertexBuffers(gl: WebGLRenderingContext, program): number {
     //  |/      |/
     //  v2------v3
     let vertices = new Float32Array([
-       0.5, 1.0, 0.5,   0.5, 0.0, 0.5,   -0.5, 0.0, 0.5,   -0.5, 1.0, 0.5, // 正面 v0-v3-v2-v1
-       0.5, 1.0, 0.5,   0.5, 0.0, 0.5,   0.5, 0.0, -0.5,   0.5, 1.0, -0.5, // 右侧面 v0-v3-v4-v5
-       0.5, 1.0, 0.5,   0.5, 1.0, -0.5,  -0.5, 1.0, -0.5,  -0.5, 1.0, 0.5, // 上面 v0-v5-v6-v1
-       -0.5, 1.0, 0.5,  -0.5, 1.0, -0.5, -0.5, 0.0, -0.5,  -0.5, 0.0, 0.5, // 左侧面 v1-v6-v7-v2
-       0.5, 0.0, 0.5,   -0.5, 0.0, 0.5,  -0.5, 0.0, -0.5,  0.5, 0.0, -0.5,  // 底面 v3-v2-v7-v4
-       0.5, 1.0, -0.5,  0.5, 0.0, -0.5,  -0.5, 0.0, -0.5,  -0.5, 1.0, -0.5, // 背面 v5-v4-v7-v6
+       0.5, 0.5, 0.5,   0.5, -0.5, 0.5,   -0.5, -0.5, 0.5,   -0.5, 0.5, 0.5, // 正面 v0-v3-v2-v1
+       0.5, 0.5, 0.5,   0.5, -0.5, 0.5,   0.5, -0.5, -0.5,   0.5, 0.5, -0.5, // 右侧面 v0-v3-v4-v5
+       0.5, 0.5, 0.5,   0.5, 0.5, -0.5,  -0.5, 0.5, -0.5,  -0.5, 0.5, 0.5, // 上面 v0-v5-v6-v1
+       -0.5, 0.5, 0.5,  -0.5, 0.5, -0.5, -0.5, -0.5, -0.5,  -0.5, -0.5, 0.5, // 左侧面 v1-v6-v7-v2
+       0.5, -0.5, 0.5,   -0.5, -0.5, 0.5,  -0.5, -0.5, -0.5,  0.5, -0.5, -0.5,  // 底面 v3-v2-v7-v4
+       0.5, 0.5, -0.5,  0.5, -0.5, -0.5,  -0.5, -0.5, -0.5,  -0.5, 0.5, -0.5, // 背面 v5-v4-v7-v6
     ]);
     // 纹理坐标
     let texCoords = new Float32Array([
@@ -141,7 +185,7 @@ function initVertexBuffers(gl: WebGLRenderingContext, program): number {
         1.0, 0.0,  1.0, 1.0,  0.0, 1.0,  0.0, 0.0, // 上面 v0-v5-v6-v1
         1.0, 1.0,  0.0, 1.0,  0.0, 0.0,  1.0, 0.0, // 左侧面 v1-v6-v7-v2
         1.0, 0.0,  0.0, 0.0,  0.0, 1.0,  1.0, 1.0, // 底面 v3-v2-v7-v4
-        1.0, 1.0,  1.0, 0.0,  0.0, 0.0,  1.0, 1.0, // 背面 v5-v4-v7-v6
+        1.0, 1.0,  1.0, 0.0,  0.0, 0.0,  0.0, 1.0, // 背面 v5-v4-v7-v6
     ]);
 
     // 立方体顶点坐标对应的颜色,所有面的颜色均相同
@@ -251,7 +295,7 @@ function drawBox(gl, n, width, height, depth, u_MvpMatrix, viewProjMatrix: Matri
 }
 
 
-function initTextures(gl: WebGLRenderingContext, program): boolean {
+function initTextures(gl: WebGLRenderingContext, program, n, u_MvpMatrix, viewProjMatrix, u_NormalMatrix): boolean {
     // 纹理贴图1
     let texture = gl.createTexture();
     if (!texture) {
@@ -270,6 +314,7 @@ function initTextures(gl: WebGLRenderingContext, program): boolean {
     }
     image.onload = function() {
         loadTexture(gl, texture, u_Sampler, image);
+        draw(gl, program, n, u_MvpMatrix, viewProjMatrix, u_NormalMatrix);
     };
     // 浏览器开始加载图像
     image.src = "../resources/sky.jpg";

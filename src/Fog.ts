@@ -11,7 +11,8 @@ void main() {
   gl_Position = u_MvpMatrix * a_Position;
   v_Color = vec4(a_Color.rgb, a_Color.a);
   // 计算顶点和视点之间的距离
-  v_Dist = distance(u_ModelMatrix * a_Position, u_Eye);  
+  //   v_Dist = distance(u_ModelMatrix * a_Position, u_Eye);  
+  v_Dist = gl_Position.w;
 }`;
 // 片元着色器
 const FSHADER_SOURCE =
@@ -86,10 +87,6 @@ const webgl_demo = function() {
     viewProjMatrix.lookAt(eye[0], eye[1], eye[2], 0.0, 2.0, 0.0, 0.0, 1.0, 0.0);
     
     g_ModelMatrix.setTranslate(0.0, 0.0, 0.0);
-    // g_ModelMatrix.setLookAt(eye[0], eye[1], eye[2], 0, 2, 0, 0, 1, 0);
-    // g_ModelMatrix.multiply(new Vector4([10, 10, 10, 1]));
-    // g_ModelMatrix.multiplyVector4(new Vector4([1, 1, 1, 1]));
-    // g_ModelMatrix.multiplyVector4(new Vector4([1, 1, 1, 1]));
 
     draw(gl, program, n, u_MvpMatrix, viewProjMatrix, u_ModelMatrix);
 };
@@ -117,8 +114,6 @@ function keydown(ev, gl, program, n, u_FogDist, fogDist) {
 
 
 function draw(gl, program, n, u_MvpMatrix, viewProjMatrix: Matrix4, u_ModelMatrix) {
-    
-    
     // 清空颜色缓冲区和深度缓冲区的背景色
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     

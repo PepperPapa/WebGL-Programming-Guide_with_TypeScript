@@ -45,11 +45,12 @@ const webgl_demo = function() {
     }
     // 指定canvas的背景颜色
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    // gl.enable(gl.DEPTH_TEST);
-    // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.enable(gl.DEPTH_TEST);
+    
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     let viewMatrix = new Matrix4();
     let projMatrix = new Matrix4();
@@ -94,17 +95,18 @@ function keydown(ev, gl, program, n, u_ViewMatrix, viewMatrix, u_ModelMatrix, mo
     } else {
         return;
     }
-    // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     draw(gl, program, n, u_ViewMatrix, viewMatrix, u_ModelMatrix, modelMatrix);
 }
 
 function draw(gl, program, n, u_ViewMatrix, viewMatrix, u_ModelMatrix, modelMatrix) {
+    
     viewMatrix.setLookAt(g_eyeX, g_eyeY, g_eyeZ, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
     gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatrix.elements);
     gl.uniformMatrix4fv(u_ModelMatrix, false, modelMatrix.elements);
     // 绘制
     gl.drawElements(gl.TRIANGLES, n, gl.UNSIGNED_BYTE, 0);
+    
 }
 
 function initVertexBuffers(gl: WebGLRenderingContext, program): number {

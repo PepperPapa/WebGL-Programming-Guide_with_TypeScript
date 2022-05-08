@@ -69,7 +69,6 @@ const webgl_demo = function() {
       currentAngle = animate(currentAngle);
       // 绘制矩形
       draw(gl, program, canvas, fbo, plane, cube, currentAngle, texture, viewProjMatrix, viewProjMatrixFBO);
-      // 绘制带贴图立方体
       requestAnimationFrame(tick);
     };
     tick();
@@ -162,7 +161,7 @@ function  drawTexCube(gl, program, o, angle, texture, viewProjMatrix) {
 
 function drawCube(gl, program, o, angle, viewProjMatrix) {
   // 计算模型变换矩阵
-  g_modelMatrix.setRotate(20, 1.0, 0.0, 0.0); // 绕x轴旋转20°
+  g_modelMatrix.setRotate (20, 1.0, 0.0, 0.0); // 绕x轴旋转20°
   g_modelMatrix.rotate(angle, 0.0, 1.0, 0.0); // 绕y轴旋转angle角度
 
   // 计算视图投影矩阵
